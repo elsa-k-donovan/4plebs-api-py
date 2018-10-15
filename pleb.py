@@ -73,8 +73,4 @@ class Pleb:
             yield (json.dumps(record, default=int))
         
 pb = Pleb(**SEARCH_PARAMS)
-
-
-
-        
-pb = Pleb(**SEARCH_PARAMS)
+# pb.save_data()
