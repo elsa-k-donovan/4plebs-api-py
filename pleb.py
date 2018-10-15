@@ -10,6 +10,23 @@ SEARCH_PARAMS = {
     "page_limit" : 2
 }
 
+import json
+import requests
+import time
+import pandas as pd
+import json
+
+from elasticsearch import Elasticsearch
+
+SEARCH_PARAMS = {
+    "start_date" : "2017-05-05",
+    "end_date" : "2017-05-07",
+    "boards" : ["pol"],
+    "page_limit" : 2
+}
+INDEX="dataframe"
+TYPE= "record"
+
 class Pleb:
     def __init__(self, start_date, end_date, boards, page_limit = float('inf'), requests_per_min=5):
         self.rate_limit = 60/requests_per_min
@@ -26,7 +43,7 @@ class Pleb:
         result = json.loads(result.text)["0"]["posts"]
         return pd.io.json.json_normalize(result)
             
-    def save_data(self, fnm=None):
+    def save_data(self, fnm=None, es_store=False):
         if fnm is None : 
             fnm = "_".join([self.start,self.end,self.boards])+".csv"
         acc = pd.DataFrame()
@@ -40,6 +57,24 @@ class Pleb:
             
             acc = pd.concat([acc, results], ignore_index=True)
             time.sleep(self.rate_limit)
-        acc.to_csv(fnm)
+        if not es_store:
+            acc.to_csv(fnm)
+        else:
+            e = Elasticsearch() # no args, connect to localhost:9200
+            if not e.indices.exists(INDEX):
+                raise RuntimeError('index does not exists, use `curl -X PUT "localhost:9200/%s"` and try again'%INDEX)
+
+            r = e.bulk(rec_to_actions(df)) # return a dict
+
+    def rec_to_actions(df):
+
+        for record in df.to_dict(orient="records"):
+            yield ('{ "index" : { "_index" : "%s", "_type" : "%s" }}'% (INDEX, TYPE))
+            yield (json.dumps(record, default=int))
+        
+pb = Pleb(**SEARCH_PARAMS)
+
+
+
         
 pb = Pleb(**SEARCH_PARAMS)
