@@ -65,7 +65,7 @@ class Pleb:
             if not e.indices.exists(self.index):
                 raise RuntimeError('index does not exists, use `curl -X PUT "localhost:9200/%s"` and try again'%self.index)
 
-            r = e.bulk(rec_to_actions(acc)) # return a dict
+            r = e.bulk(self.rec_to_actions(acc)) # return a dict
 
     def rec_to_actions(df):
 
