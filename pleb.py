@@ -23,12 +23,12 @@ SEARCH_PARAMS = {
     "end_date" : "2017-05-07",
     "boards" : ["pol"],
     "page_limit" : 2,
-    "index" : "dataframe"
+    "index" : "dataframe",
+    "type" : "record"
 }
-TYPE= "record"
 
 class Pleb:
-    def __init__(self, start_date, end_date, boards, page_limit = float('inf'), requests_per_min=5, index="dataframe"):
+    def __init__(self, start_date, end_date, boards, page_limit = float('inf'), requests_per_min=5, index="dataframe", type="record"):
         self.rate_limit = 60/requests_per_min
         self.boards = ".".join(boards)
         self.page_limit = page_limit
@@ -36,6 +36,7 @@ class Pleb:
         self.end = end_date
         self.current_page = 1
         self.index = index
+        self.type = type
         self.base_url = "http://archive.4plebs.org/_/api/chan/search/" + "?boards="+ self.boards + "&start="+ start_date + "&end="+ end_date +"&page="
         
     def download_page(self):
@@ -70,7 +71,7 @@ class Pleb:
     def rec_to_actions(self, df):
 
         for record in df.to_dict(orient="records"):
-            yield ('{ "index" : { "_index" : "%s", "_type" : "%s" }}'% (INDEX, TYPE))
+            yield ('{ "index" : { "_index" : "%s", "_type" : "%s" }}'% (self.index, self.type))
             yield (json.dumps(record, default=int))
         
 pb = Pleb(**SEARCH_PARAMS)
