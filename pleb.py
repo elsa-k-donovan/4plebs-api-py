@@ -7,8 +7,8 @@ import json
 from elasticsearch import Elasticsearch
 
 SEARCH_PARAMS = {
-    "start_date" : "2017-05-05",
-    "end_date" : "2017-05-07",
+    "start_date" : "2018-05-05",
+    "end_date" : "2019-05-07",
     "boards" : ["pol"],
     "page_limit" : 2,
     "index" : "dataframe",
@@ -27,7 +27,7 @@ class Pleb:
         self.type = type
         self.base_url = "http://archive.4plebs.org/_/api/chan/search/" + "?boards="+ self.boards + "&start="+ start_date + "&end="+ end_date +"&page="
         
-    def download_page(self):
+    def _download_page(self):
         result = requests.get(self.base_url+ str(self.current_page))
         result.raise_for_status()
         result = json.loads(result.text)["0"]["posts"]
@@ -39,23 +39,32 @@ class Pleb:
         acc = pd.DataFrame()
         while(self.current_page < self.page_limit):
             try:
-                results = self.download_page()
+                results = self._download_page()
                 self.current_page += 1
             except Exception as e:
                 print(e)
                 break
             
-            acc = pd.concat([acc, results], ignore_index=True)
+            acc = pd.concat([acc, results], ignore_index=True).fillna('No Info')
+            del acc["media"]
             time.sleep(self.rate_limit)
         if not es_store:
             acc.to_csv(fnm)
         else:
             e = Elasticsearch() # no args, connect to localhost:9200
             if not e.indices.exists(self.index):
-                raise RuntimeError('index does not exists, use `curl -X PUT "localhost:9200/%s"` and try again'%self.index)
-
+                request_body = {
+                    "settings" : {
+                        "number_of_shards": 1,
+                        "number_of_replicas": 0
+                    }
+                }
+                print("creating '%s' index..." % (self.index))
+                e.indices.create(index = self.index, body = request_body)
+                
             r = e.bulk(self.rec_to_actions(acc)) # return a dict
-
+            print(not r["errors"])
+            
     def rec_to_actions(self, df):
 
         for record in df.to_dict(orient="records"):
@@ -63,4 +72,4 @@ class Pleb:
             yield (json.dumps(record, default=int))
         
 pb = Pleb(**SEARCH_PARAMS)
-# pb.save_data()
+#pb.save_data(es_store=True)
