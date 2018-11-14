@@ -67,7 +67,7 @@ class Pleb:
 
             r = e.bulk(self.rec_to_actions(acc)) # return a dict
 
-    def rec_to_actions(df):
+    def rec_to_actions(self, df):
 
         for record in df.to_dict(orient="records"):
             yield ('{ "index" : { "_index" : "%s", "_type" : "%s" }}'% (INDEX, TYPE))
