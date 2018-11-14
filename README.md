@@ -7,6 +7,6 @@ Might add more features from https://4plebs.tech/foolfuuka/#basic-foolfuuka-sear
 
 https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html
 
-## Kibana Docs
+## Kibana Docs
 
 https://www.elastic.co/guide/en/kibana/current/index.html
