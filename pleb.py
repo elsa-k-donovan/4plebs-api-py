@@ -22,19 +22,20 @@ SEARCH_PARAMS = {
     "start_date" : "2017-05-05",
     "end_date" : "2017-05-07",
     "boards" : ["pol"],
-    "page_limit" : 2
+    "page_limit" : 2,
+    "index" : "dataframe"
 }
-INDEX="dataframe"
 TYPE= "record"
 
 class Pleb:
-    def __init__(self, start_date, end_date, boards, page_limit = float('inf'), requests_per_min=5):
+    def __init__(self, start_date, end_date, boards, page_limit = float('inf'), requests_per_min=5, index="dataframe"):
         self.rate_limit = 60/requests_per_min
         self.boards = ".".join(boards)
         self.page_limit = page_limit
         self.start = start_date
         self.end = end_date
         self.current_page = 1
+        self.index = index
         self.base_url = "http://archive.4plebs.org/_/api/chan/search/" + "?boards="+ self.boards + "&start="+ start_date + "&end="+ end_date +"&page="
         
     def download_page(self):
@@ -61,10 +62,10 @@ class Pleb:
             acc.to_csv(fnm)
         else:
             e = Elasticsearch() # no args, connect to localhost:9200
-            if not e.indices.exists(INDEX):
-                raise RuntimeError('index does not exists, use `curl -X PUT "localhost:9200/%s"` and try again'%INDEX)
+            if not e.indices.exists(self.index):
+                raise RuntimeError('index does not exists, use `curl -X PUT "localhost:9200/%s"` and try again'%self.index)
 
-            r = e.bulk(rec_to_actions(df)) # return a dict
+            r = e.bulk(rec_to_actions(acc)) # return a dict
 
     def rec_to_actions(df):
 
