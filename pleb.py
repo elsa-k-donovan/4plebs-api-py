@@ -2,18 +2,6 @@ import json
 import requests
 import time
 import pandas as pd
-
-SEARCH_PARAMS = {
-    "start_date" : "2017-05-05",
-    "end_date" : "2017-05-07",
-    "boards" : ["pol"],
-    "page_limit" : 2
-}
-
-import json
-import requests
-import time
-import pandas as pd
 import json
 
 from elasticsearch import Elasticsearch
