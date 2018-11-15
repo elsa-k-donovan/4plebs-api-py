@@ -102,7 +102,7 @@ class Pleb:
 
 
 def days_from_month(year, month):
-    """ Given a year and a month (2014,5) returns the str() of its days
+    """ Given a year and a month (2014,5) returns its days
         in a 4plebs query-friendly format (YYYY-MM-DD)
     """
     return [datetime.date(year, month, day) for day in range(1, calendar.monthrange(year, month)[1] + 1)]
