@@ -62,13 +62,13 @@ class Pleb:
                     "number_of_shards": 1,
                     "number_of_replicas": 0
                 },
-				"mappings" : {
-					"record" : {
-						"properties": {
-							"timestamp": { "type": "date", "format": "epoch_second" }
-						}
-					}
-				}
+                "mappings": {
+                    "record": {
+                        "properties": {
+                            "timestamp": {"type": "date", "format": "epoch_second"}
+                        }
+                    }
+                }
             }
             print("creating '%s' index..." % (self.index))
             e.indices.create(index=self.index, body=request_body)
@@ -115,6 +115,44 @@ def days_from_month(year, month):
     return [datetime.date(year, month, day) for day in range(1, calendar.monthrange(year, month)[1] + 1)]
 
 
+def csv_into_es(fnm, index, es_type):
+    """ Convenience method to load another csv into another ES index"""
+
+    def rec_to_actions(df):
+        for record in df.to_dict(orient="records"):
+            yield ('{ "index" : { "_index" : "%s", "_type" : "%s" }}' % (index, es_type))
+            yield (json.dumps(record, default=int))
+
+    acc = pd.read_csv(fnm).fillna("No Info")
+    acc["publish_date"] = acc["publish_date"].str.split(".")
+    acc["publish_date"] = [l[0] for l in acc["publish_date"]]
+    e = Elasticsearch()  # no args, connect to localhost:9200
+    if not e.indices.exists(index):
+        request_body = {
+            "settings": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0
+            },
+            "mappings": {
+                "record": {
+                    "properties": {
+                        "publish_date": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss"}
+                    }
+                }
+            }
+
+        }
+        print("creating '%s' index..." % (index))
+        e.indices.create(index=index, body=request_body)
+
+    r = e.bulk(rec_to_actions(acc))  # return a dict
+
+    if not r["errors"]:
+        print(str(len(acc)) + " documents posted to ElasticSearch")
+    else:
+        print(" !!! ERROR !!! ", r)
+
+
 def scrape_month_into_es(year, month):
     """ Samples {SEARCH_PARAMS["page_limit"]}'s first pages per day of the given month.
         Since we're just brute-forcing and stopping to look after this is the fastest way
@@ -135,5 +173,14 @@ def scrape_month_into_es(year, month):
             print(e)
 
 
+def scrape_year_into_es(year):
+    """ Convenience method """
+    params = DATE_PARAMS
+    for i in range(1, 13):
+        params["month"] = i
+        scrape_month_into_es(**params)
+
+
 if __name__ == '__main__':
+    # csv_into_es("trump.csv", "mediacloudwithdate", "record")
     scrape_month_into_es(**DATE_PARAMS)
