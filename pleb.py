@@ -61,7 +61,14 @@ class Pleb:
                 "settings": {
                     "number_of_shards": 1,
                     "number_of_replicas": 0
-                }
+                },
+				"mappings" : {
+					"record" : {
+						"properties": {
+							"timestamp": { "type": "date", "format": "epoch_second" }
+						}
+					}
+				}
             }
             print("creating '%s' index..." % (self.index))
             e.indices.create(index=self.index, body=request_body)
