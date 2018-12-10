@@ -9,8 +9,8 @@ import calendar
 from elasticsearch import Elasticsearch
 
 SEARCH_PARAMS = {
-    "start_date": "2016-05-05",
-    "end_date": "2016-05-06",
+    # "start_date": "2016-05-05",
+    # "end_date": "2016-05-06",
     "boards": ["pol"],
     "page_limit": 5,
     "requests_per_min": 5,  # actual req per minute in api_documentation
