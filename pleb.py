@@ -194,7 +194,10 @@ if __name__ == '__main__':
     # csv_into_es("trump.csv", "mediacloudwithdate", "record")
 
     # SCRAPE MONTH GIVEN DATE_PARAMS ###
-    # scrape_month_into_es(**DATE_PARAMS, SEARCH_PARAMS)
+    # scrape_month_into_es(**DATE_PARAMS, params=SEARCH_PARAMS)
+
+    # SCRAPE MONTH GIVEN DATE_PARAMS ###
+    # scrape_year_into_es(DATE_PARAMS["year"], SEARCH_PARAMS)
 
     # REGULAR SCRAPING GIVEN DAYS IN SEARCH PARAMS
     # pass es_store=False to get the raw data in csv format, True to load into active ES server at localhost:9200
