@@ -9,8 +9,8 @@ import calendar
 from elasticsearch import Elasticsearch
 
 SEARCH_PARAMS = {
-    # "start_date": "2016-05-05",
-    # "end_date": "2016-05-06",
+    "start_date": "2016-05-05",
+    "end_date": "2016-05-06",
     "boards": ["pol"],
     "page_limit": 5,
     "requests_per_min": 5,  # actual req per minute in api_documentation
@@ -94,14 +94,14 @@ class Pleb:
             try:
                 results = self._download_page()
                 print("Downloaded page ... " + str(self.current_page))
-                print(results.shape)
+                print("New data shape ", results.shape)
                 self.current_page += 1
             except Exception as e:
                 print("Hit rate limit on page " + str(self.current_page) + ". Trying again ...")
                 time.sleep(5)  # wait 5 seconds before trying again as the api doc recommends
 
             acc = pd.concat([acc, results], ignore_index=True).fillna('No Info')
-            print(acc.shape)
+            print("All data shape ", acc.shape)
 
             if "media" in acc.columns:
                 del acc["media"]
@@ -199,7 +199,7 @@ if __name__ == '__main__':
     # REGULAR SCRAPING GIVEN DAYS IN SEARCH PARAMS
     # pass es_store=False to get the raw data in csv format, True to load into active ES server at localhost:9200
     pb = Pleb(**SEARCH_PARAMS)
-    df = pb.save_data(es_store=False)
+    df = pb.save_data(es_store=True)
     print(df.shape)
     print("Program execution time(seconds): ")
     print(time.time() - starting_program_time)
