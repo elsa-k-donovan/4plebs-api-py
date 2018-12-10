@@ -9,11 +9,11 @@ import calendar
 from elasticsearch import Elasticsearch
 
 SEARCH_PARAMS = {
-    # "start_date": "2016-05-05",
-    # "end_date": "2019-05-07",
+    "start_date": "2016-05-05",
+    "end_date": "2016-05-06",
     "boards": ["pol"],
-    "page_limit": 2,
-    "requests_per_min": 5,
+    "page_limit": 5,
+    "requests_per_min": 5,  # actual req per minute in api_documentation
     "index": "dataframe",
     "type": "record"
 }
@@ -90,15 +90,21 @@ class Pleb:
 
         acc = pd.DataFrame()
         while(self.current_page < self.page_limit):
+            results = pd.DataFrame()
             try:
                 results = self._download_page()
+                print("Downloaded page ... " + str(self.current_page))
+                print(results.shape)
                 self.current_page += 1
             except Exception as e:
-                print(e)
-                break
+                print("Hit rate limit on page " + str(self.current_page) + ". Trying again ...")
+                time.sleep(5)  # wait 5 seconds before trying again as the api doc recommends
 
             acc = pd.concat([acc, results], ignore_index=True).fillna('No Info')
-            del acc["media"]
+            print(acc.shape)
+
+            if "media" in acc.columns:
+                del acc["media"]
             time.sleep(self.rate_limit)
         # Branch treatment according to es_store
         if not es_store:
@@ -116,7 +122,7 @@ def days_from_month(year, month):
 
 
 def csv_into_es(fnm, index, es_type):
-    """ Convenience method to load another csv into another ES index"""
+    """ Convenience method to load mediacloud csv into another ES index"""
 
     def rec_to_actions(df):
         for record in df.to_dict(orient="records"):
@@ -153,7 +159,7 @@ def csv_into_es(fnm, index, es_type):
         print(" !!! ERROR !!! ", r)
 
 
-def scrape_month_into_es(year, month):
+def scrape_month_into_es(year, month, params):
     """ Samples {SEARCH_PARAMS["page_limit"]}'s first pages per day of the given month.
         Since we're just brute-forcing and stopping to look after this is the fastest way
         of sampling we currently have.
@@ -163,24 +169,37 @@ def scrape_month_into_es(year, month):
     for start_date in starting_dates:
         try:
             # A fancy new way to say tomorrow
-            SEARCH_PARAMS["start_date"] = str(start_date)
-            SEARCH_PARAMS["end_date"] = str(start_date + datetime.timedelta(1))
+            params["start_date"] = str(start_date)
+            params["end_date"] = str(start_date + datetime.timedelta(1))
 
-            pb = Pleb(**SEARCH_PARAMS)
+            pb = Pleb(**params)
             pb.save_data(es_store=True)
-            time.sleep(60 / SEARCH_PARAMS["requests_per_min"])
+            time.sleep(60 / params["requests_per_min"])
         except Exception as e:
             print(e)
 
 
-def scrape_year_into_es(year):
+def scrape_year_into_es(year, search_params):
     """ Convenience method """
-    params = DATE_PARAMS
+    date_params = {}
+    date_params["year"] = year
     for i in range(1, 13):
-        params["month"] = i
-        scrape_month_into_es(**params)
+        date_params["month"] = i
+        scrape_month_into_es(params=search_params, **date_params)
 
 
 if __name__ == '__main__':
+    starting_program_time = time.time()
+    # CSV INTO ES ###
     # csv_into_es("trump.csv", "mediacloudwithdate", "record")
-    scrape_month_into_es(**DATE_PARAMS)
+
+    # SCRAPE MONTH GIVEN DATE_PARAMS ###
+    # scrape_month_into_es(**DATE_PARAMS, SEARCH_PARAMS)
+
+    # REGULAR SCRAPING GIVEN DAYS IN SEARCH PARAMS
+    # pass es_store=False to get the raw data in csv format, True to load into active ES server at localhost:9200
+    pb = Pleb(**SEARCH_PARAMS)
+    df = pb.save_data(es_store=False)
+    print(df.shape)
+    print("Program execution time(seconds): ")
+    print(time.time() - starting_program_time)
